@@ -12,8 +12,6 @@ namespace API_test
 {
     class prnsAPI
     {
-
-        private const int commandTimeOut = 500;
         private enum compareType
         {
             lessThan, lessEqual, equal, greaterEqual, greaterThan 
@@ -22,26 +20,33 @@ namespace API_test
 
         public prnsAPI()
         {
-            runTests();
+            //runTests();
         }
   
-        public static bool runTests()
+        public static int runTests(string url, string databasename )
         {
-            string url = "http://profilestest/ProfilesSearchAPI/ProfilesSearchAPI.svc/Search";
+            //string url = "http://profilestest/ProfilesSearchAPI/ProfilesSearchAPI.svc/Search";
             //string databaseServer = "(local)";
             //string databaseName = "ProfilesRNS_Test3_debug";
             //string databaseUsername = "App_Profiles10";
             //string databasePassword = "Password1234";
-            string sqlConnectionString = "Data Source=(local);Initial Catalog=ProfilesRNS_test3_debug;User ID=App_Profiles10;Password=Password1234";
+            string sqlConnectionString = "Data Source=(local);Initial Catalog=" + databasename + ";User ID=App_Profiles10;Password=Password1234";
 
+            try
+            {
+                int totalPeople = getTotalPeople(sqlConnectionString);
+                if (totalPeople < 0) { Log.logLn("Error getting the number of people from the database"); return 1; }
+                if (!allPeople(url, totalPeople)) { Log.logLn("ERROR Wrong number of people returned for all people test"); return 1; }
+                if (!keywordAdultPeople(url, totalPeople)) { Log.logLn("ERROR Wrong number of people returned for keywordAdultPeople test"); return 1; }
+                Log.logLn("All PRNS API tests passed");
+            }
+            catch(Exception e)
+            {
+                Log.logLn(e.Message);
+                return 1;
+            }
 
-            int totalPeople = getTotalPeople(sqlConnectionString);
-            if (totalPeople < 0) { Log.logLn("Error getting the number of people from the database"); return false; }
-            if (!allPeople(url, totalPeople)) { Log.logLn("ERROR Wrong number of people returned for all people test"); return false; }
-            if (!keywordAdultPeople(url, totalPeople)) { Log.logLn("ERROR Wrong number of people returned for keywordAdultPeople test"); return false; }
-
-            Log.logLn("All tests passed");
-            return true;
+            return 0;
         }
 
         private static int getTotalPeople(string sqlConnectionString)
@@ -52,7 +57,7 @@ namespace API_test
             SqlDataReader dbreader;
             dbconnection.Open();
             dbcommand.CommandType = CommandType.Text;
-            dbcommand.CommandTimeout = commandTimeOut;
+            dbcommand.CommandTimeout = Config.commandTimeOut;
             //dbcommand.Parameters.Add(new SqlParameter("@userid", sm.Session().UserID));
             dbcommand.Connection = dbconnection;
             dbreader = dbcommand.ExecuteReader(CommandBehavior.CloseConnection);
@@ -127,7 +132,7 @@ namespace API_test
             return false;
         }
 
-        private static string PostForm(String uri, String postData)
+        public static string PostForm(String uri, String postData)
         {
             HttpWebRequest request = (HttpWebRequest)WebRequest.Create(uri);
             request.Method = "POST";
