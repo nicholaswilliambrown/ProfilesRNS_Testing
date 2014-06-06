@@ -19,12 +19,12 @@ namespace API_test
         static int Main(string[] args)
         {
             if(args.Length < 1) { 
-                Log.logLn("No Arguments supplied"); return(1); 
-                /* // Use for debugging purposes
-                string[] args2 = { "TESTSPARQL", "-u", "http://profilestest/ProfilesSPARQLAPI/ProfilesSPARQLAPI.svc/search", "-d", "ProfilesRNS_Test3" };
+                //Log.logLn("No Arguments supplied"); return(1); 
+                // Use for debugging purposes
+                string[] args2 = { "TESTBETA", "-u", "http://profilestest/ProfilesBetaAPI/ProfileService.svc/ProfileSearch", "-d", "ProfilesRNS_Test3" };
                 Main(args2);
                 return 0;
-                 */
+                
             }
             int returnVal = 0;
             string url = getArg(args, "-u");
@@ -39,6 +39,9 @@ namespace API_test
                     break;
                 case "TESTSPARQL":
                     returnVal = SPARQLAPI.runTests(url, database);
+                    break;
+                case "TESTBETA":
+                    returnVal = BetaAPI.runTests(url, database);
                     break;
                 case "LINKS":
                     string baseURI = getArg(args, "-b");

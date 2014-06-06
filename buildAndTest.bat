@@ -32,17 +32,20 @@ call C:\Windows\Microsoft.NET\Framework64\v4.0.30319\msbuild "tmp\ProfilesRNS-%V
 call C:\Windows\Microsoft.NET\Framework64\v4.0.30319\msbuild "tmp\ProfilesRNS-%Version%\ProfilesRNS\Website\SourceCode\ProfilesSearchAPI\ProfilesSearchAPI.csproj" "/p:Platform=AnyCPU;Configuration=Release;PublishDestination=C:\inetpub\wwwroot\ProfilesSearchAPI" /t:PublishToFileSystem
 call C:\Windows\Microsoft.NET\Framework64\v4.0.30319\msbuild "tmp\ProfilesRNS-%Version%\ProfilesRNS\Website\SourceCode\ProfilesSPARQLAPI\ProfilesSPARQLAPI.csproj" "/p:Platform=AnyCPU;Configuration=Release;PublishDestination=C:\inetpub\wwwroot\ProfilesSPARQLAPI" /t:PublishToFileSystem
 
+REM use this section to skip link checking if you want to save time
+goto skipLinkChecking
 copy test_configuration_files\Profiles_Test3_Web.config C:\inetpub\wwwroot\Profiles\web.config
 call API_test\bin\Debug\API_test.exe LINKS -b http://profilestest/profiles -d ProfilesRNS_Test3
 call API_test\bin\Debug\API_test.exe GET tmp/index.html http://profilestest/index.html
 call "c:\Program Files (x86)\LinkChecker\linkchecker.exe" http://profilestest/index.html -r2
 if %errorlevel% neq 0 goto error
+:skipLinkChecking
 
 copy test_configuration_files\ProfilesSearchAPI_Web.config C:\inetpub\wwwroot\ProfilesSearchAPI\web.config
 call API_test\bin\Debug\API_test.exe TESTPRNS -u http://profilestest/ProfilesSearchAPI/ProfilesSearchAPI.svc/Search -d ProfilesRNS_Test3
 if %errorlevel% neq 0 goto error
 :start
-copy test_configuration_files\ProfilesSearchAPI_Web.config C:\inetpub\wwwroot\ProfilesSearchAPI\web.config
+copy test_configuration_files\ProfilesSPARQLAPI_Web.config C:\inetpub\wwwroot\ProfilesSPARQLAPI\web.config
 call API_test\bin\Debug\API_test.exe TESTSPARQL -u http://profilestest/ProfilesSPARQLAPI/ProfilesSPARQLAPI.svc/Search -d ProfilesRNS_Test3
 if %errorlevel% neq 0 goto error
 

@@ -49,7 +49,7 @@ namespace API_test
             return 0;
         }
 
-        private static int getTotalPeople(string sqlConnectionString)
+        public static int getTotalPeople(string sqlConnectionString)
         {
             SqlConnection dbconnection = new SqlConnection(sqlConnectionString);
             SqlCommand dbcommand = new SqlCommand("select count (*) as [count] from [Profile.Import].Person");
