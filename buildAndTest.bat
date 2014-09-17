@@ -43,7 +43,7 @@ call config.bat %*
 rem **************************************
 rem *** Build or download release zip
 rem **************************************
-if %build_release% equ true (
+if %build_from_github% equ true (
 	call API_test\bin\Debug\API_test.exe GET tmp/github_%Version%.zip %GIT_URL%
 	call %zip% x tmp/github_%Version%.zip -otmp/github_%Version% -r
 
@@ -58,12 +58,23 @@ if %build_release% equ true (
 	copy tmp\github_%Version%\ProfilesRNS-master\Release\ProfilesRNS-%Version%.zip tmp\ProfilesRNS-%Version%.zip
 
 )
-if %build_release% equ false (
+if %build_local% equ true (
+	pushd tmp\ProfilesRNS\Release
+	call BuildRelease.bat %Version%
+	if %errorlevel% neq 0 (
+		Echo An error occured while building the release.
+		exit /b 1
+	)
+	popd
+
+	copy tmp\github_%Version%\ProfilesRNS-master\Release\ProfilesRNS-%Version%.zip tmp\ProfilesRNS-%Version%.zip
+
+)
+if %download_release% equ true (
 	call API_test\bin\Debug\API_test.exe GET tmp/ProfilesRNS-%Version%.zip %RELEASE_URL%
 )
 
 call %zip% x tmp/ProfilesRNS-%Version%.zip -otmp/ProfilesRNS-%Version% -r
-exit /b 1
 
 rem **************************************
 rem *** Build new database
@@ -80,20 +91,21 @@ rem *** binary folders and quicktest
 rem **************************************
 if %test_binary% equ true (
 	del /S /F /Q %wwwroot%\%ProfilesPath%
-	echo d | xcopy /s tmp\ProfilesRNS-%Version%\ProfilesRNS\Binary\Profiles\ %wwwroot%\%ProfilesPath%\
+	timeout 4
+	echo d | xcopy /s tmp\ProfilesRNS-%Version%\ProfilesRNS\Website\Binary\Profiles %wwwroot%\%ProfilesPath%
 	
 	copy %test_configuration_files%\Profiles_Test3_Web.config C:\inetpub\wwwroot\%ProfilesPath%\web.config
 	call API_test\bin\Debug\API_test.exe QUICKLINKS -b %ProfilesRNSBasePath% -d %DB_NAME%
 	if %errorlevel% neq 0 goto error
 	call API_test\bin\Debug\API_test.exe GET tmp/index.html %IISRootUrl%/index.html
-	call "c:\Program Files (x86)\LinkChecker\linkchecker.exe" %IISRootUrl%/index.html -r0 --timeout=240 --threads=-1
+	call "c:\Program Files (x86)\LinkChecker\linkchecker.exe" %IISRootUrl%/index.html -r1 --timeout=240 --threads=-1
 	if %errorlevel% neq 0 (
 		Echo An error occured while Linkchecking.
 		exit /b 1
 	)
 
 	del /S /F /Q %wwwroot%\%ProfilesBetaAPIPath%
-	echo d | xcopy /s tmp\ProfilesRNS-%Version%\ProfilesRNS\Binary\ProfilesBetaAPI\ %wwwroot%\%ProfilesBetaAPIPath%\
+	echo d | xcopy /s tmp\ProfilesRNS-%Version%\ProfilesRNS\Website\Binary\ProfilesBetaAPI %wwwroot%\%ProfilesBetaAPIPath%
 	copy %test_configuration_files%\ProfilesBetaAPI_Web.config C:\inetpub\wwwroot\%ProfilesBetaAPIPath%\web.config
 	call API_test\bin\Debug\API_test.exe TESTBETA -u %IISRootUrl%/%ProfilesBetaAPIPath%/ProfileService.svc/ProfileSearch -d %DB_NAME%
 	if %errorlevel% neq 0 (
@@ -103,7 +115,7 @@ if %test_binary% equ true (
 
 
 	del /S /F /Q %wwwroot%\%ProfilesSearchAPIPath%
-	echo d | xcopy /s tmp\ProfilesRNS-%Version%\ProfilesRNS\Binary\ProfilesSearchAPI\ %wwwroot%\%ProfilesSearchAPIPath%\
+	echo d | xcopy /s tmp\ProfilesRNS-%Version%\ProfilesRNS\Website\Binary\ProfilesSearchAPI %wwwroot%\%ProfilesSearchAPIPath%
 	copy %test_configuration_files%\ProfilesSearchAPI_Web.config C:\inetpub\wwwroot\%ProfilesSearchAPIPath%\web.config
 	call API_test\bin\Debug\API_test.exe TESTPRNS -u %IISRootUrl%/%ProfilesSearchAPIPath%/ProfilesSearchAPI.svc/Search -d %DB_NAME%
 	if %errorlevel% neq 0 (
@@ -112,7 +124,7 @@ if %test_binary% equ true (
 	)
 	
 	del /S /F /Q %wwwroot%\%ProfilesSPARQLAPIPath%
-	echo d | xcopy /s tmp\ProfilesRNS-%Version%\ProfilesRNS\Binary\ProfilesSPARQLAPI\ %wwwroot%\%ProfilesSPARQLAPIPath%\
+	echo d | xcopy /s tmp\ProfilesRNS-%Version%\ProfilesRNS\Website\Binary\ProfilesSPARQLAPI %wwwroot%\%ProfilesSPARQLAPIPath%
 	copy %test_configuration_files%\ProfilesSPARQLAPI_Web.config C:\inetpub\wwwroot\%ProfilesSPARQLAPIPath%\web.config
 	call API_test\bin\Debug\API_test.exe TESTSPARQL -u %IISRootUrl%/%ProfilesSPARQLAPIPath%/ProfilesSPARQLAPI.svc/Search -d %DB_NAME%
 	if %errorlevel% neq 0 (
@@ -187,48 +199,29 @@ if %test_source% equ true (
 	)
 )
 
-REM use this section to skip link checking if you want to save time
-rem goto skipLinkChecking
-copy %test_configuration_files%\Profiles_Test3_Web.config C:\inetpub\wwwroot\%ProfilesPath%\web.config
-call API_test\bin\Debug\API_test.exe LINKS -b %ProfilesRNSBasePath% -d %DB_NAME%
-if %errorlevel% neq 0 goto error
-call API_test\bin\Debug\API_test.exe GET tmp/index.html %IISRootUrl%/index.html
-call "c:\Program Files (x86)\LinkChecker\linkchecker.exe" %IISRootUrl%/index.html -r1 --timeout=240 --threads=-1
-if %errorlevel% neq 0 (
-	Echo An error occured while Linkchecking.
-	exit /b 1
+if %linkcheck% equ true (
+	REM use this section to skip link checking if you want to save time
+	rem goto skipLinkChecking
+	copy %test_configuration_files%\Profiles_Test3_Web.config C:\inetpub\wwwroot\%ProfilesPath%\web.config
+	call API_test\bin\Debug\API_test.exe LINKS -b %ProfilesRNSBasePath% -d %DB_NAME%
+	if %errorlevel% neq 0 goto error
+	call API_test\bin\Debug\API_test.exe GET tmp/index.html %IISRootUrl%/index.html
+	call "c:\Program Files (x86)\LinkChecker\linkchecker.exe" %IISRootUrl%/index.html -r1 --timeout=240 --threads=-1
+	if %errorlevel% neq 0 (
+		Echo An error occured while Linkchecking.
+		exit /b 1
+	)
+
+	copy %test_configuration_files%\Profiles_Test3_Web.config C:\inetpub\wwwroot\%ProfilesPath%\web.config
+	call API_test\bin\Debug\API_test.exe QUICKLINKS -b %ProfilesRNSBasePath% -d %DB_NAME%
+	if %errorlevel% neq 0 goto error
+	call API_test\bin\Debug\API_test.exe GET tmp/index.html %IISRootUrl%/index.html
+	call "c:\Program Files (x86)\LinkChecker\linkchecker.exe" %IISRootUrl%/index.html -r2 --timeout=240 --threads=-1
+	if %errorlevel% neq 0 (
+		Echo An error occured while Linkchecking.
+		exit /b 1
+	)
 )
-
-copy %test_configuration_files%\Profiles_Test3_Web.config C:\inetpub\wwwroot\%ProfilesPath%\web.config
-call API_test\bin\Debug\API_test.exe QUICKLINKS -b %ProfilesRNSBasePath% -d %DB_NAME%
-if %errorlevel% neq 0 goto error
-call API_test\bin\Debug\API_test.exe GET tmp/index.html %IISRootUrl%/index.html
-call "c:\Program Files (x86)\LinkChecker\linkchecker.exe" %IISRootUrl%/index.html -r2 --timeout=240 --threads=-1
-if %errorlevel% neq 0 (
-	Echo An error occured while Linkchecking.
-	exit /b 1
-)
-
-
-
-:skipLinkChecking
-
-
-
-:start
-copy %test_configuration_files%\ProfilesBetaAPI_Web.config C:\inetpub\wwwroot\%ProfilesBetaAPIPath%\web.config
-call API_test\bin\Debug\API_test.exe TESTBETA -u %IISRootUrl%/%ProfilesBetaAPIPath%/ProfileService.svc/ProfileSearch -d %DB_NAME%
-if %errorlevel% neq 0 (
-	Echo An error occured while testing ProfilesBetaAPI.
-	exit /b 1
-)
-goto end
-net stop Tomcat7
-rmdir /s /q c:\Shindig\apache-tomcat-7.0.53\webapps\shindigorng\
-copy tmp\ProfilesRNS-%Version%\ProfilesRNS\Website\ORNG\shindigorng.war C:\Shindig\apache-tomcat-7.0.53\webapps\shindigorng.war
-copy %test_configuration_files%\shindigorng.properties C:\Shindig\apache-tomcat-7.0.53\shindigconf\shindigorng.properties
-net start Tomcat7
-:end
 
 exit /b 0
 :error

@@ -37,14 +37,54 @@ if %ConfigName% equ full_test_20_nwb (
 	set test_configuration_files=NWB_test_configuration_files
 )
 
+if %ConfigName% equ build_database_20 (
+
+
+	rem Build or download release zip
+	set download_release=true
+	set build_release=false
+	set build_local=false
+	set build_from_github=false
+	set RELEASE_URL=%3
+	set GIT_URL=https://github.com/nicholaswilliambrown/ProfilesRNS/archive/master.zip
+	
+	rem tests
+	set build_database=true
+	set linkcheck=false
+	set test_source=false
+	set test_binary=false
+	
+	rem Test Data
+	set test_data=ProfilesRNS_TestData_20
+	set DATA_FILE_FOLDER=ProfilesRNS_TestData_20
+	
+	rem Environment
+	set DB_NAME=ProfilesRNS
+	set ProfilesPath=Profiles
+	set ProfilesBetaAPIPath=ProfilesBetaAPI
+	set ProfilesSearchAPIPath=ProfilesSearchAPI
+	set ProfilesSPARQLAPIPath=ProfilesSPARQLAPI
+	set test_configuration_files=test_configuration_files
+)
+
+
 if %ConfigName% equ release_test_20 (
+	rem Download location
+	set RELEASE_URL=%3
+
+	rem tests
 	set build_release=false
 	set build_database=false
-	set RELEASE_URL=%3
-	set test_data=ProfilesRNS_Test4
-	set DATA_FILE_FOLDER=ProfilesRNS_Test4
-	set DB_NAME=ProfilesRNS_nwb2
-	set GIT_URL=https://github.com/nicholaswilliambrown/ProfilesRNS/archive/master.zip
+	set linkcheck=false
+	set test_source=false
+	set test_binary=false
+	
+	rem Test Data
+	set test_data=ProfilesRNS_TestData_20
+	set DATA_FILE_FOLDER=ProfilesRNS_TestData_40
+	
+	rem Environment
+	set DB_NAME=ProfilesRNS_nwb
 	set ProfilesPath=NWB_Profiles
 	set ProfilesBetaAPIPath=NWB_ProfilesBetaAPI
 	set ProfilesSearchAPIPath=NWB_ProfilesSearchAPI
@@ -52,9 +92,30 @@ if %ConfigName% equ release_test_20 (
 	set test_configuration_files=NWB_test_configuration_files
 )
 
-if %test_data% equ ProfilesRNS_Test3 (
-	set DATA_FILE_FOLDER=ProfilesRNS_Test3
+
+if %ConfigName% equ build_local (
+	rem Download location
+	set RELEASE_URL=%3
+
+	rem tests
+	set build_local=true
+	set build_from_github=false
+	set build_database=false
+	set linkcheck=false
+	set test_source=false
+	set test_binary=true
+	
+	rem Test Data
+	set test_data=ProfilesRNS_TestData_20
+	set DATA_FILE_FOLDER=ProfilesRNS_TestData_40
+	
+	rem Environment
+	set DB_NAME=ProfilesRNS_nwb
+	set ProfilesPath=NWB_Profiles
+	set ProfilesBetaAPIPath=NWB_ProfilesBetaAPI
+	set ProfilesSearchAPIPath=NWB_ProfilesSearchAPI
+	set ProfilesSPARQLAPIPath=NWB_ProfilesSPARQLAPI
+	set test_configuration_files=NWB_test_configuration_files
 )
-if %test_data% equ ProfilesRNS_Test4 (
-	set DATA_FILE_FOLDER=ProfilesRNS_Test4
-)
+
+set ProfilesRNSBasePath=%IISRootUrl%%ProfilesPath%

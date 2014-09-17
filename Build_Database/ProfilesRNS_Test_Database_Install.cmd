@@ -18,19 +18,20 @@ set DB_NAME=%1
 set DATA_FILE_FOLDER=%2
 set ProfilesRNSBasePath=%3
 set automated_testing_path=%~dp0
-set RootPath=%~dp0
-set RootPath=%RootPath:\Automated_Testing\Build_Database\=\Database\%
-echo %RootPath%
-
+rem set RootPath=%~dp0
+rem set RootPath=%RootPath:\Automated_Testing\Build_Database\=\Database\%
+set RootPath=%4
 
 echo . Creating new ProfilesRNS database
 sqlcmd -S . -d master -v YourProfilesServerName="." YourProfilesDatabaseName="%DB_NAME%" -E -i ProfilesRNS_CreateDatabase.sql 
 
+goto skipschema
 echo . Creating ProfilesRNS Schema
 del "%RootPath%\ProfilesRNS_CreateSchema.sql"
 cd "%RootPath%\schema"
 call CreateSchemaInstallScript.bat > ..\ProfilesRNS_CreateSchema.sql
 cd %automated_testing_path%
+:skipschema
 sqlcmd -S . -d "%DB_NAME%" -E -i "%RootPath%\ProfilesRNS_CreateSchema.sql"
 
 echo . Creating ProfilesRNS Accounts
@@ -49,16 +50,16 @@ dtutil /SQL PubMedDisambiguation_GetPubMEDXML /DELETE
 dtutil /SQL PubMedDisambiguation_GetPubs /DELETE
 
 echo . Installing PubMedDisambiguation_GetPubs SSIS package
-dtutil /FILE "%RootPath%\SQL2008\PubMedDisambiguation_GetPubs.dtsx" /DestServer . /COPY SQL;PubMedDisambiguation_GetPubs
+dtutil /FILE "%RootPath%\SQL2012\PubMedDisambiguation_GetPubs.dtsx" /DestServer . /COPY SQL;PubMedDisambiguation_GetPubs
 
 echo . Installing PubMedDisambiguation_GetPubMEDXML SSIS package
-dtutil /FILE "%RootPath%\SQL2008\PubMedDisambiguation_GetPubMEDXML.dtsx" /DestServer . /COPY SQL;PubMedDisambiguation_GetPubMEDXML
+dtutil /FILE "%RootPath%\SQL2012\PubMedDisambiguation_GetPubMEDXML.dtsx" /DestServer . /COPY SQL;PubMedDisambiguation_GetPubMEDXML
 
 echo . Installing ProfilesGeoCode SSIS package
-dtutil /FILE "%RootPath%\SQL2008\ProfilesGeoCode.dtsx" /DestServer . /COPY SQL;ProfilesGeoCode
+dtutil /FILE "%RootPath%\SQL2012\ProfilesGeoCode.dtsx" /DestServer . /COPY SQL;ProfilesGeoCode
 
 echo . Creating ProfilesRNS Disambiguation and GeoCode job
-sqlcmd -S . -d %DB_NAME% -E -v YourProfilesServerName="." YourProfilesDatabaseName="%DB_NAME%" -i "%RootPath%\SQL2012\PubMedDisambiguation_and_GeoCode.sql"
+sqlcmd -S . -d %DB_NAME% -E -v YourProfilesServerName="." YourProfilesDatabaseName="%DB_NAME%" -i "PubMedDisambiguation_and_GeoCode.sql"
 
 echo . Loading test data.
 sqlcmd -S . -d %DB_NAME% -E -i %DATA_FILE_FOLDER%\data.sql
@@ -75,7 +76,7 @@ sqlcmd -S . -d %DB_NAME% -E -i "%RootPath%\ProfilesRNS_DataLoad_Part3.sql"
 sqlcmd -S . -d %DB_NAME% -E -Q "exec msdb.dbo.sp_start_job @job_name ='%DB_NAME%_PubMedDisambiguation_and_GeoCode'"
 
 echo . Waiting for Disambiguation and Geocoding to complete
-sqlcmd -S . -d master -E -Q "while (0 != (select count(*) from [msdb].[dbo].[sysjobactivity] a JOIN [msdb].[dbo].[sysjobs] b on a.job_id = b.job_id and b.name = '%DB_NAME%_PubMedDisambiguation_and_GeoCode' and a.stop_execution_date is null)) begin waitfor delay '00:00:15' end"
+sqlcmd -S . -d master -E -v YourProfilesDatabaseName="%DB_NAME%" -i WaitForDisambiguation.sql
 
 echo . Disambiguation Complete
 rem echo . Loading ORNG components
