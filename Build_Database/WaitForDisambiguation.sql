@@ -1,0 +1,1 @@
+while (0 != (select count(*) from [msdb].[dbo].[sysjobactivity] a JOIN [msdb].[dbo].[sysjobs] b on a.job_id = b.job_id and b.name = '$(YourProfilesDatabaseName)_PubMedDisambiguation_and_GeoCode' and a.stop_execution_date is null)) begin waitfor delay '00:00:15' end
