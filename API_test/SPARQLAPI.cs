@@ -21,6 +21,7 @@ namespace API_test
             }
             catch (Exception e)
             {
+                Log.logLn("****** Exception caught during SPARQL tests ******");
                 Log.logLn(e.Message);
                 return 1;
             }

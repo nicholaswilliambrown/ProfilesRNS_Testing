@@ -49,7 +49,7 @@ if %build_from_github% equ true (
 
 	pushd tmp\github_%Version%\ProfilesRNS-master\Release
 	call BuildRelease.bat %Version%
-	if %errorlevel% neq 0 (
+	if !errorlevel! neq 0 (
 		Echo An error occured while building the release.
 		exit /b 1
 	)
@@ -61,7 +61,7 @@ if %build_from_github% equ true (
 if %build_local% equ true (
 	pushd tmp\ProfilesRNS\Release
 	call BuildRelease.bat %Version%
-	if %errorlevel% neq 0 (
+	if !errorlevel! neq 0 (
 		Echo An error occured while building the release.
 		exit /b 1
 	)
@@ -81,7 +81,7 @@ rem *** Build new database
 rem **************************************
 if %build_database% equ true (
 	pushd Build_Database\
-	call ProfilesRNS_Test_Database_Install.cmd %DB_NAME% %DATA_FILE_FOLDER% %ProfilesRNSBasePath% %TestingRootPath%tmp\ProfilesRNS-%Version%\ProfilesRNS\Database
+	call ProfilesRNS_Test_Database_Install.cmd %DB_NAME% %DATA_FILE_FOLDER% %ProfilesRNSBasePath% %TestingRootPath%tmp\ProfilesRNS-%Version%\ProfilesRNS\Database %SQL_VERSION%
 	popd
 )
 
@@ -96,10 +96,10 @@ if %test_binary% equ true (
 	
 	copy %test_configuration_files%\Profiles_Test3_Web.config C:\inetpub\wwwroot\%ProfilesPath%\web.config
 	call API_test\bin\Debug\API_test.exe QUICKLINKS -b %ProfilesRNSBasePath% -d %DB_NAME%
-	if %errorlevel% neq 0 goto error
+	if !errorlevel! neq 0 goto error
 	call API_test\bin\Debug\API_test.exe GET tmp/index.html %IISRootUrl%/index.html
 	call "c:\Program Files (x86)\LinkChecker\linkchecker.exe" %IISRootUrl%/index.html -r1 --timeout=240 --threads=-1
-	if %errorlevel% neq 0 (
+	if !errorlevel! neq 0 (
 		Echo An error occured while Linkchecking.
 		exit /b 1
 	)
@@ -108,7 +108,7 @@ if %test_binary% equ true (
 	echo d | xcopy /s tmp\ProfilesRNS-%Version%\ProfilesRNS\Website\Binary\ProfilesBetaAPI %wwwroot%\%ProfilesBetaAPIPath%
 	copy %test_configuration_files%\ProfilesBetaAPI_Web.config C:\inetpub\wwwroot\%ProfilesBetaAPIPath%\web.config
 	call API_test\bin\Debug\API_test.exe TESTBETA -u %IISRootUrl%/%ProfilesBetaAPIPath%/ProfileService.svc/ProfileSearch -d %DB_NAME%
-	if %errorlevel% neq 0 (
+	if !errorlevel! neq 0 (
 		Echo An error occured while testing ProfilesBetaAPI.
 		exit /b 1
 	)
@@ -118,7 +118,7 @@ if %test_binary% equ true (
 	echo d | xcopy /s tmp\ProfilesRNS-%Version%\ProfilesRNS\Website\Binary\ProfilesSearchAPI %wwwroot%\%ProfilesSearchAPIPath%
 	copy %test_configuration_files%\ProfilesSearchAPI_Web.config C:\inetpub\wwwroot\%ProfilesSearchAPIPath%\web.config
 	call API_test\bin\Debug\API_test.exe TESTPRNS -u %IISRootUrl%/%ProfilesSearchAPIPath%/ProfilesSearchAPI.svc/Search -d %DB_NAME%
-	if %errorlevel% neq 0 (
+	if !errorlevel! neq 0 (
 		Echo An error occured while testing ProfilesSearchAPI .
 		exit /b 1
 	)
@@ -127,7 +127,7 @@ if %test_binary% equ true (
 	echo d | xcopy /s tmp\ProfilesRNS-%Version%\ProfilesRNS\Website\Binary\ProfilesSPARQLAPI %wwwroot%\%ProfilesSPARQLAPIPath%
 	copy %test_configuration_files%\ProfilesSPARQLAPI_Web.config C:\inetpub\wwwroot\%ProfilesSPARQLAPIPath%\web.config
 	call API_test\bin\Debug\API_test.exe TESTSPARQL -u %IISRootUrl%/%ProfilesSPARQLAPIPath%/ProfilesSPARQLAPI.svc/Search -d %DB_NAME%
-	if %errorlevel% neq 0 (
+	if !errorlevel! neq 0 (
 		Echo An error occured while testing ProfilesSPARQLAPI.
 		exit /b 1
 	)
@@ -140,60 +140,60 @@ rem **************************************
 if %test_source% equ true (
 	del /S /F /Q %wwwroot%\%ProfilesPath%
 	call C:\Windows\Microsoft.NET\Framework64\v4.0.30319\msbuild "tmp\ProfilesRNS-%Version%\ProfilesRNS\Website\SourceCode\Profiles\Profiles\Profiles.csproj" "/p:Platform=AnyCPU;Configuration=Release;PublishDestination=%wwwroot%\%ProfilesPath%" /t:PublishToFileSystem
-	if %errorlevel% neq 0 (
+	if !errorlevel! neq 0 (
 		Echo An error occured while compiling ProfilesRNS Application.
 		exit /b 1
 	)
 	
 	copy %test_configuration_files%\Profiles_Test3_Web.config C:\inetpub\wwwroot\%ProfilesPath%\web.config
 	call API_test\bin\Debug\API_test.exe QUICKLINKS -b %ProfilesRNSBasePath% -d %DB_NAME%
-	if %errorlevel% neq 0 goto error
+	if !errorlevel! neq 0 goto error
 	call API_test\bin\Debug\API_test.exe GET tmp/index.html %IISRootUrl%/index.html
-	call "c:\Program Files (x86)\LinkChecker\linkchecker.exe" %IISRootUrl%/index.html -r0 --timeout=240 --threads=-1
-	if %errorlevel% neq 0 (
+	call "c:\Program Files (x86)\LinkChecker\linkchecker.exe" %IISRootUrl%/index.html -r1 --timeout=240 --threads=-1
+	if !errorlevel! neq 0 (
 		Echo An error occured while Linkchecking.
 		exit /b 1
 	)
 
 	del /S /F /Q %wwwroot%\%ProfilesBetaAPIPath%
 	call C:\Windows\Microsoft.NET\Framework64\v4.0.30319\msbuild "tmp\ProfilesRNS-%Version%\ProfilesRNS\Website\SourceCode\ProfilesBetaAPI\Connects.Profiles.Service\Connects.Profiles.Service.csproj" "/p:Platform=AnyCPU;Configuration=Release;PublishDestination=%wwwroot%\%ProfilesBetaAPIPath%" /t:PublishToFileSystem
-	if %errorlevel% neq 0 (
+	if !errorlevel! neq 0 (
 		Echo An error occured while compiling ProfilesBetaAPI.
 		exit /b 1
 	)
 	
 	copy %test_configuration_files%\ProfilesBetaAPI_Web.config C:\inetpub\wwwroot\%ProfilesBetaAPIPath%\web.config
 	call API_test\bin\Debug\API_test.exe TESTBETA -u %IISRootUrl%/%ProfilesBetaAPIPath%/ProfileService.svc/ProfileSearch -d %DB_NAME%
-	if %errorlevel% neq 0 (
+	if !errorlevel! neq 0 (
 		Echo An error occured while testing ProfilesBetaAPI.
 		exit /b 1
 	)
 
-
 	del /S /F /Q %wwwroot%\%ProfilesSearchAPIPath%
 	call C:\Windows\Microsoft.NET\Framework64\v4.0.30319\msbuild "tmp\ProfilesRNS-%Version%\ProfilesRNS\Website\SourceCode\ProfilesSearchAPI\ProfilesSearchAPI.csproj" "/p:Platform=AnyCPU;Configuration=Release;PublishDestination=%wwwroot%\%ProfilesSearchAPIPath%" /t:PublishToFileSystem
-	if %errorlevel% neq 0 (
+	if !errorlevel! neq 0 (
 		Echo An error occured while compiling ProfilesSearchAPI.
 		exit /b 1
 	)
 
 	copy %test_configuration_files%\ProfilesSearchAPI_Web.config C:\inetpub\wwwroot\%ProfilesSearchAPIPath%\web.config
 	call API_test\bin\Debug\API_test.exe TESTPRNS -u %IISRootUrl%/%ProfilesSearchAPIPath%/ProfilesSearchAPI.svc/Search -d %DB_NAME%
-	if %errorlevel% neq 0 (
+	if !errorlevel! neq 0 (
 		Echo An error occured while testing ProfilesSearchAPI .
 		exit /b 1
 	)
 	
 	del /S /F /Q %wwwroot%\%ProfilesSPARQLAPIPath%
+	copy tmp\ProfilesRNS-%Version%\ProfilesRNS\Website\SourceCode\SemWeb\src\bin\sparql-core.dll tmp\ProfilesRNS-%Version%\ProfilesRNS\Website\SourceCode\ProfilesSPARQLAPI\bin\
 	call C:\Windows\Microsoft.NET\Framework64\v4.0.30319\msbuild "tmp\ProfilesRNS-%Version%\ProfilesRNS\Website\SourceCode\ProfilesSPARQLAPI\ProfilesSPARQLAPI.csproj" "/p:Platform=AnyCPU;Configuration=Release;PublishDestination=%wwwroot%\%ProfilesSPARQLAPIPath%" /t:PublishToFileSystem
-	if %errorlevel% neq 0 (
+	if !errorlevel! neq 0 (
 		Echo An error occured while compiling ProfilesSPARQLAPI.
 		exit /b 1
 	)
 	
 	copy %test_configuration_files%\ProfilesSPARQLAPI_Web.config C:\inetpub\wwwroot\%ProfilesSPARQLAPIPath%\web.config
 	call API_test\bin\Debug\API_test.exe TESTSPARQL -u %IISRootUrl%/%ProfilesSPARQLAPIPath%/ProfilesSPARQLAPI.svc/Search -d %DB_NAME%
-	if %errorlevel% neq 0 (
+	if !errorlevel! neq 0 (
 		Echo An error occured while testing ProfilesSPARQLAPI.
 		exit /b 1
 	)
@@ -204,20 +204,20 @@ if %linkcheck% equ true (
 	rem goto skipLinkChecking
 	copy %test_configuration_files%\Profiles_Test3_Web.config C:\inetpub\wwwroot\%ProfilesPath%\web.config
 	call API_test\bin\Debug\API_test.exe LINKS -b %ProfilesRNSBasePath% -d %DB_NAME%
-	if %errorlevel% neq 0 goto error
+	if !errorlevel! neq 0 goto error
 	call API_test\bin\Debug\API_test.exe GET tmp/index.html %IISRootUrl%/index.html
 	call "c:\Program Files (x86)\LinkChecker\linkchecker.exe" %IISRootUrl%/index.html -r1 --timeout=240 --threads=-1
-	if %errorlevel% neq 0 (
+	if !errorlevel! neq 0 (
 		Echo An error occured while Linkchecking.
 		exit /b 1
 	)
 
 	copy %test_configuration_files%\Profiles_Test3_Web.config C:\inetpub\wwwroot\%ProfilesPath%\web.config
 	call API_test\bin\Debug\API_test.exe QUICKLINKS -b %ProfilesRNSBasePath% -d %DB_NAME%
-	if %errorlevel% neq 0 goto error
+	if !errorlevel! neq 0 goto error
 	call API_test\bin\Debug\API_test.exe GET tmp/index.html %IISRootUrl%/index.html
 	call "c:\Program Files (x86)\LinkChecker\linkchecker.exe" %IISRootUrl%/index.html -r2 --timeout=240 --threads=-1
-	if %errorlevel% neq 0 (
+	if !errorlevel! neq 0 (
 		Echo An error occured while Linkchecking.
 		exit /b 1
 	)

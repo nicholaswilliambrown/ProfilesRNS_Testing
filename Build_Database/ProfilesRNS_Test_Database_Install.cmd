@@ -21,6 +21,7 @@ set automated_testing_path=%~dp0
 rem set RootPath=%~dp0
 rem set RootPath=%RootPath:\Automated_Testing\Build_Database\=\Database\%
 set RootPath=%4
+set SQL_VERSION=%5
 
 echo . Creating new ProfilesRNS database
 sqlcmd -S . -d master -v YourProfilesServerName="." YourProfilesDatabaseName="%DB_NAME%" -E -i ProfilesRNS_CreateDatabase.sql 
@@ -42,7 +43,9 @@ echo . Importing Ontology Data
 sqlcmd -S . -d "%DB_NAME%" -E -v ProfilesRNSRootPath="%RootPath%" ProfilesRNSBasePath="%ProfilesRNSBasePath%" -i "%RootPath%\ProfilesRNS_DataLoad_Part1.sql"
 
 echo . Dropping various ProfilesRNS jobs
-sqlcmd -S . -d "%DB_NAME%" -E -Q "exec msdb.dbo.sp_delete_job @job_name ='%DB_NAME%_PubMedDisambiguation_and_GeoCode'"
+sqlcmd -S . -d "%DB_NAME%" -E -Q "exec msdb.dbo.sp_delete_job @job_name ='%DB_NAME%_PubMedDisambiguation_GetPubs'"
+sqlcmd -S . -d "%DB_NAME%" -E -Q "exec msdb.dbo.sp_delete_job @job_name ='%DB_NAME%_PubMedDisambiguation_GetPubMEDXML'"
+sqlcmd -S . -d "%DB_NAME%" -E -Q "exec msdb.dbo.sp_delete_job @job_name ='%DB_NAME%_ProfilesRNS_GeoCode'"
 
 REM echo . Dropping various SSIS packages
 dtutil /SQL ProfilesGeoCode /DELETE
@@ -50,16 +53,24 @@ dtutil /SQL PubMedDisambiguation_GetPubMEDXML /DELETE
 dtutil /SQL PubMedDisambiguation_GetPubs /DELETE
 
 echo . Installing PubMedDisambiguation_GetPubs SSIS package
-dtutil /FILE "%RootPath%\SQL2012\PubMedDisambiguation_GetPubs.dtsx" /DestServer . /COPY SQL;PubMedDisambiguation_GetPubs
+dtutil /FILE "%RootPath%\%SQL_VERSION%\PubMedDisambiguation_GetPubs.dtsx" /DestServer . /COPY SQL;PubMedDisambiguation_GetPubs
 
 echo . Installing PubMedDisambiguation_GetPubMEDXML SSIS package
-dtutil /FILE "%RootPath%\SQL2012\PubMedDisambiguation_GetPubMEDXML.dtsx" /DestServer . /COPY SQL;PubMedDisambiguation_GetPubMEDXML
+dtutil /FILE "%RootPath%\%SQL_VERSION%\PubMedDisambiguation_GetPubMEDXML.dtsx" /DestServer . /COPY SQL;PubMedDisambiguation_GetPubMEDXML
 
 echo . Installing ProfilesGeoCode SSIS package
-dtutil /FILE "%RootPath%\SQL2012\ProfilesGeoCode.dtsx" /DestServer . /COPY SQL;ProfilesGeoCode
+dtutil /FILE "%RootPath%\%SQL_VERSION%\ProfilesGeoCode.dtsx" /DestServer . /COPY SQL;ProfilesGeoCode
 
-echo . Creating ProfilesRNS Disambiguation and GeoCode job
-sqlcmd -S . -d %DB_NAME% -E -v YourProfilesServerName="." YourProfilesDatabaseName="%DB_NAME%" -i "PubMedDisambiguation_and_GeoCode.sql"
+echo . Creating ProfilesRNS Disambiguation and GeoCodeing jobs
+rem sqlcmd -S . -d %DB_NAME% -E -v YourProfilesServerName="." YourProfilesDatabaseName="%DB_NAME%" -i "PubMedDisambiguation_and_GeoCode.sql"
+..\API_test\bin\Debug\API_test.exe REPLACE -i "%RootPath%\%SQL_VERSION%\PubMedDisambiguation_GetPubs.sql" -o "%RootPath%\%DB_NAME%_PubMedDisambiguation_GetPubs.sql" -r "@job_name=N'PubMedDisambiguation_GetPubs'" -w "@job_name=N'%DB_NAME%_PubMedDisambiguation_GetPubs'"
+..\API_test\bin\Debug\API_test.exe REPLACE -i "%RootPath%\%SQL_VERSION%\PubMedDisambiguation_GetPubMEDXML.sql" -o "%RootPath%\%DB_NAME%_PubMedDisambiguation_GetPubMEDXML.sql" -r "@job_name=N'PubMedDisambiguation_GetPubMEDXML'" -w "@job_name=N'%DB_NAME%_PubMedDisambiguation_GetPubMEDXML'"
+..\API_test\bin\Debug\API_test.exe REPLACE -i "%RootPath%\ProfilesRNS_GeoCodeJob.sql" -o "%RootPath%\%DB_NAME%_ProfilesRNS_GeoCodeJob.sql" -r "@job_name=N'ProfilesRNSGeoCode'" -w "@job_name=N'%DB_NAME%_ProfilesRNS_GeoCode'"
+
+sqlcmd -S . -d %DB_NAME% -E -v YourProfilesServerName="." YourProfilesDatabaseName="%DB_NAME%" -i "%RootPath%\%DB_NAME%_PubMedDisambiguation_GetPubs.sql"
+sqlcmd -S . -d %DB_NAME% -E -v YourProfilesServerName="." YourProfilesDatabaseName="%DB_NAME%" -i "%RootPath%\%DB_NAME%_PubMedDisambiguation_GetPubMEDXML.sql"
+sqlcmd -S . -d %DB_NAME% -E -v YourProfilesServerName="." YourProfilesDatabaseName="%DB_NAME%" -i "%RootPath%\%DB_NAME%_ProfilesRNS_GeoCodeJob.sql"
+
 
 echo . Loading test data.
 sqlcmd -S . -d %DB_NAME% -E -i %DATA_FILE_FOLDER%\data.sql
@@ -73,12 +84,32 @@ echo . Running jobs
 sqlcmd -S . -d %DB_NAME% -E -i "%RootPath%\ProfilesRNS_DataLoad_Part3.sql"
 
 
-sqlcmd -S . -d %DB_NAME% -E -Q "exec msdb.dbo.sp_start_job @job_name ='%DB_NAME%_PubMedDisambiguation_and_GeoCode'"
+rem sqlcmd -S . -d %DB_NAME% -E -Q "exec msdb.dbo.sp_start_job @job_name ='%DB_NAME%_PubMedDisambiguation_and_GeoCode'"
 
-echo . Waiting for Disambiguation and Geocoding to complete
-sqlcmd -S . -d master -E -v YourProfilesDatabaseName="%DB_NAME%" -i WaitForDisambiguation.sql
+echo . Running Disambigaution
+sqlcmd -S . -d %DB_NAME% -E -Q "exec msdb.dbo.sp_start_job @job_name ='%DB_NAME%_PubMedDisambiguation_GetPubs'"
+sqlcmd -S . -d master -E -v JobName="%DB_NAME%_PubMedDisambiguation_GetPubs" -i WaitForJob.sql
 
-echo . Disambiguation Complete
+echo . Downloading publication XML
+sqlcmd -S . -d %DB_NAME% -E -Q "exec msdb.dbo.sp_start_job @job_name ='%DB_NAME%_PubMedDisambiguation_GetPubMEDXML'"
+sqlcmd -S . -d master -E -v JobName="%DB_NAME%_PubMedDisambiguation_GetPubMEDXML" -i WaitForJob.sql
+
+echo . Running Geocode Job
+sqlcmd -S . -d %DB_NAME% -E -Q "exec msdb.dbo.sp_start_job @job_name ='%DB_NAME%_ProfilesRNS_GeoCode'"
+sqlcmd -S . -d master -E -v JobName="%DB_NAME%_ProfilesRNS_GeoCode" -i WaitForJob.sql
+
+Echo . JobGroup 7
+sqlcmd -S . -d %DB_NAME% -E -Q "EXEC [Framework.].[RunJobGroup] @JobGroup = 7"
+
+Echo . JobGroup 8
+sqlcmd -S . -d %DB_NAME% -E -Q "EXEC [Framework.].[RunJobGroup] @JobGroup = 8"
+
+Echo . JobGroup 9
+sqlcmd -S . -d %DB_NAME% -E -Q "EXEC [Framework.].[RunJobGroup] @JobGroup = 9"
+
+Echo . JobGroup 3
+sqlcmd -S . -d %DB_NAME% -E -Q "EXEC [Framework.].[RunJobGroup] @JobGroup = 3"
+
 rem echo . Loading ORNG components
 rem sqlcmd -S . -d %DB_NAME% -E -i "%RootPath%\ORNG\ORNG_CreateSchema.sql"
 rem sqlcmd -S . -d %DB_NAME% -E -i "%RootPath%\ORNG\NewStuff.sql"
