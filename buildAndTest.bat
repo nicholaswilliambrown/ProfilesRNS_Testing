@@ -38,16 +38,18 @@ rem **************************************
 rem *** load configuration settings
 rem **************************************
 call config.bat %*
-
+if exist localConfig.bat (
+	call localConfig.bat %*
+)
 
 rem **************************************
 rem *** Build or download release zip
 rem **************************************
 if %build_from_github% equ true (
-	call API_test\bin\Debug\API_test.exe GET tmp/github_%Version%.zip %GIT_URL%
-	call %zip% x tmp/github_%Version%.zip -otmp/github_%Version% -r
+	call API_test\bin\Debug\API_test.exe GET tmp/github_%Version%%ReleaseCandidate%.zip %GIT_URL%
+	call %zip% x tmp/github_%Version%%ReleaseCandidate%.zip -otmp/github_%Version%%ReleaseCandidate% -r
 
-	pushd tmp\github_%Version%\ProfilesRNS-master\Release
+	pushd tmp\github_%Version%%ReleaseCandidate%\ProfilesRNS-master\Release
 	call BuildRelease.bat %Version%
 	if !errorlevel! neq 0 (
 		Echo An error occured while building the release.
@@ -55,8 +57,8 @@ if %build_from_github% equ true (
 	)
 	popd
 
-	copy tmp\github_%Version%\ProfilesRNS-master\Release\ProfilesRNS-%Version%.zip tmp\ProfilesRNS-%Version%.zip
-
+	copy tmp\github_%Version%%ReleaseCandidate%\ProfilesRNS-master\Release\ProfilesRNS-%Version%.zip tmp\ProfilesRNS-%Version%%ReleaseCandidate%.zip
+	set Version=%Version%%ReleaseCandidate%
 )
 if %build_local% equ true (
 	pushd tmp\ProfilesRNS\Release
@@ -221,6 +223,12 @@ if %linkcheck% equ true (
 		Echo An error occured while Linkchecking.
 		exit /b 1
 	)
+)
+
+if %post_zip_file% equ true (
+	echo post_zip_file_folder\ProfilesRNS-%Version%.zip
+	copy tmp\ProfilesRNS-%Version%.zip %post_zip_file_folder%\ProfilesRNS-%Version%.zip
+	@echo ProfilesRNS-%Version%.zip > %post_zip_file_folder%\%post_zip_file_index%
 )
 
 exit /b 0
