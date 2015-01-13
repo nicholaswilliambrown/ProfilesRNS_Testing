@@ -13,6 +13,7 @@ rem Build or download release zip
 set download_release=false
 set build_local=false
 set build_from_github=false
+set get_latest_build=false
 set RELEASE_URL=null
 set GIT_URL=null
 set post_zip_file=false
