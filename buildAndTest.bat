@@ -78,7 +78,7 @@ if %download_release% equ true (
 if %get_latest_build% equ true (
 	call API_test\bin\Debug\API_test.exe GET tmp/latest_%Version%.txt %latest_build_path%%latest_build_index_file%
 	set /p RELEASE_FILE_NAME=<tmp/latest_%Version%.txt
-	call API_test\bin\Debug\API_test.exe GET tmp/%RELEASE_FILE_NAME% %latest_build_path%%RELEASE_FILE_NAME%
+	call API_test\bin\Debug\API_test.exe GET tmp/%RELEASE_FILE_NAME% %latest_build_path%!RELEASE_FILE_NAME!
 )
 
 call %zip% x tmp/ProfilesRNS-%Version%.zip -otmp/ProfilesRNS-%Version% -r
