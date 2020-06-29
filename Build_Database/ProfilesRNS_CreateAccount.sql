@@ -17,9 +17,10 @@ exec sp_addrolemember @rolename = 'db_datareader', @membername = 'App_Profiles10
 exec sp_addrolemember @rolename = 'db_datawriter', @membername = 'App_Profiles10'
 exec sp_addrolemember @rolename = 'db_owner', @membername = 'App_Profiles10'
 GO
-
+/*
 create USER App_OpenSocial for LOGIN App_OpenSocial
 exec sp_addrolemember @rolename = 'db_datareader', @membername = 'App_OpenSocial'
 exec sp_addrolemember @rolename = 'db_datawriter', @membername = 'App_OpenSocial'
 exec sp_addrolemember @rolename = 'db_owner', @membername = 'App_OpenSocial'
 GO
+*/
